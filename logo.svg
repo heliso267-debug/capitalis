@@ -1,0 +1,87 @@
+<svg width="640" height="640" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Неоновое свечение -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Градиент для акцентных линий -->
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6d7cff"/>
+      <stop offset="100%" stop-color="#29d39a"/>
+    </linearGradient>
+
+    <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6d7cff" stop-opacity="0.35"/>
+      <stop offset="70%" stop-color="#6d7cff" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#6d7cff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Прозрачный фон (ложится на тёмную доску) -->
+  <rect width="640" height="640" fill="none"/>
+
+  <!-- Центральное свечение -->
+  <circle cx="320" cy="320" r="220" fill="url(#coreGlow)"/>
+
+  <!-- СИГНАТУРА: меридианы, сходящиеся к центру (мировые столицы под одной короной) -->
+  <g stroke="url(#accentGrad)" stroke-width="1.2" fill="none" opacity="0.55" filter="url(#glow)">
+    <!-- концентрические орбиты -->
+    <circle cx="320" cy="320" r="150"/>
+    <circle cx="320" cy="320" r="115"/>
+    <circle cx="320" cy="320" r="80"/>
+    <!-- меридианы (эллипсы «глобуса») -->
+    <ellipse cx="320" cy="320" rx="55" ry="150"/>
+    <ellipse cx="320" cy="320" rx="105" ry="150"/>
+    <ellipse cx="320" cy="320" rx="150" ry="150"/>
+  </g>
+
+  <!-- Радиальные лучи-столицы: 8 точек по орбите -->
+  <g filter="url(#glow)">
+    <g fill="#29d39a">
+      <circle cx="320" cy="170" r="4"/>
+      <circle cx="426" cy="214" r="4"/>
+      <circle cx="470" cy="320" r="4"/>
+      <circle cx="426" cy="426" r="4"/>
+      <circle cx="320" cy="470" r="4"/>
+      <circle cx="214" cy="426" r="4"/>
+      <circle cx="170" cy="320" r="4"/>
+      <circle cx="214" cy="214" r="4"/>
+    </g>
+  </g>
+
+  <!-- Центральная «корона столицы» — ромб-звезда -->
+  <g filter="url(#softGlow)">
+    <path d="M320 285 L332 320 L320 355 L308 320 Z" fill="#ffd66d"/>
+    <path d="M285 320 L320 308 L355 320 L320 332 Z" fill="#ffd66d" opacity="0.85"/>
+  </g>
+
+  <!-- ЛОГОТИП-ТЕКСТ -->
+  <g filter="url(#glow)">
+    <text x="320" y="545" text-anchor="middle"
+          font-family="'Georgia','Times New Roman',serif"
+          font-size="62" font-weight="700" letter-spacing="8"
+          fill="#e8eeff">CAPITALIS</text>
+  </g>
+  <text x="320" y="580" text-anchor="middle"
+        font-family="system-ui,-apple-system,'Segoe UI',sans-serif"
+        font-size="15" font-weight="400" letter-spacing="11"
+        fill="#6d7cff" opacity="0.9">THE WORLD IS YOURS</text>
+
+  <!-- Верхняя подпись -->
+  <text x="320" y="95" text-anchor="middle"
+        font-family="system-ui,-apple-system,'Segoe UI',sans-serif"
+        font-size="14" font-weight="600" letter-spacing="6"
+        fill="rgba(232,238,255,0.5)">CAPITAL · TERRITORY · POWER</text>
+</svg>
