@@ -29,20 +29,23 @@
 }
 *{box-sizing:border-box}
 body{
-  margin:0; min-height:100vh;
+  margin:0; height:100vh; overflow:hidden;
   background:
     radial-gradient(1200px 600px at 20% 0%, rgba(109,124,255,.18), transparent 60%),
     radial-gradient(900px 500px at 90% 30%, rgba(41,211,154,.10), transparent 60%),
     var(--bg);
   font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial;
   color:var(--text);
-  display:grid; place-items:center; padding:20px;
+  display:grid; place-items:center; padding:8px;
 }
 
 /* ===== ДОСКА ===== */
 .board{
-  --size:min(92vw,780px);
+  /* Размер = меньшая сторона экрана минус небольшой отступ.
+     min(ширина, высота) гарантирует, что квадрат влезет при любом повороте. */
+  --size:min(96vw, 96vh, 780px);
   width:var(--size); height:var(--size);
+  container-type:size;  /* включает единицы cqi/cqh — проценты от размера доски */
   display:grid;
   grid-template-columns:repeat(11,1fr);
   grid-template-rows:repeat(11,1fr);
@@ -59,8 +62,8 @@ body{
   position:relative;
   background:var(--cell);
   border:1px solid var(--stroke);
-  border-radius:8px;
-  padding:5px 4px;
+  border-radius:clamp(4px, 1cqi, 8px);
+  padding:clamp(2px, 0.7cqi, 5px) clamp(2px, 0.6cqi, 4px);
   display:flex; flex-direction:column;
   overflow:hidden;
   min-width:0;
@@ -75,26 +78,26 @@ body{
 }
 
 /* Цветная полоса группы города */
-.band{ height:14px; margin:-5px -4px 5px; border-radius:8px 8px 0 0; }
+.band{ height:clamp(6px, 1.6cqi, 14px); margin:-4px -3px 4px; border-radius:8px 8px 0 0; }
 
 .cName{
-  font-size:10px; font-weight:800; line-height:1.1; letter-spacing:.1px;
+  font-size:clamp(6px, 1.35cqi, 11px); font-weight:800; line-height:1.1; letter-spacing:.1px;
   overflow-wrap:break-word; word-break:break-word; hyphens:auto;
 }
-.cName.long{ font-size:8.5px; line-height:1.05; }
-.cName.xlong{ font-size:7px; line-height:1.02; }
-.cPrice{ margin-top:auto; font-size:10px; font-weight:900; color:var(--green); }
-.cSub{ font-size:8.5px; color:var(--muted); margin-top:2px; line-height:1.05; }
-.cIcon{ font-size:15px; line-height:1; margin-bottom:1px; }
-.cType{ font-size:8px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); font-weight:700; }
+.cName.long{ font-size:clamp(5.5px, 1.15cqi, 9px); line-height:1.05; }
+.cName.xlong{ font-size:clamp(5px, 0.95cqi, 7.5px); line-height:1.02; }
+.cPrice{ margin-top:auto; font-size:clamp(6px, 1.3cqi, 10px); font-weight:900; color:var(--green); }
+.cSub{ font-size:clamp(5px, 1.1cqi, 8.5px); color:var(--muted); margin-top:2px; line-height:1.05; }
+.cIcon{ font-size:clamp(10px, 2cqi, 16px); line-height:1; margin-bottom:1px; }
+.cType{ font-size:clamp(5px, 1cqi, 8px); text-transform:uppercase; letter-spacing:1px; color:var(--muted); font-weight:700; }
 
 /* Спец-клетки — акцент неоном. НЕ форсируем размер имени (иначе длинный текст вылезает) */
 .cell.special .cName{ font-weight:800; }
 /* Плотные клетки (иконка+длинное имя+цена): компактнее, чтобы всё влезло */
 .cell.tax .cIcon,
-.cell.utility .cIcon{ font-size:13px; margin-bottom:0; }
+.cell.utility .cIcon{ font-size:clamp(9px, 1.7cqi, 13px); margin-bottom:0; }
 .cell.tax .cName,
-.cell.utility .cName{ font-size:8px; line-height:1.02; }
+.cell.utility .cName{ font-size:clamp(5px, 1.05cqi, 8px); line-height:1.02; }
 .cell.tax .cPrice,
 .cell.utility .cPrice{ font-size:9px; }
 .cell.chance{ background:linear-gradient(180deg,rgba(109,124,255,.12),var(--cell)); }
@@ -104,15 +107,15 @@ body{
 
 /* Угловые — крупнее и ярче */
 .cell.corner{
-  padding:6px;
+  padding:clamp(3px, 0.8cqi, 6px);
   align-items:center; justify-content:center; text-align:center;
   background:linear-gradient(135deg,rgba(109,124,255,.14),rgba(41,211,154,.08));
   border-color:var(--stroke-neon);
 }
-.cell.corner .cName{ font-size:12px; line-height:1.05; }
-.cell.corner .cName.long{ font-size:10px; }
-.cell.corner .cName.xlong{ font-size:9px; }
-.cell.corner .cSub{ font-size:8px; margin-top:2px; }
+.cell.corner .cName{ font-size:clamp(7px, 1.5cqi, 12px); line-height:1.05; }
+.cell.corner .cName.long{ font-size:clamp(6px, 1.25cqi, 10px); }
+.cell.corner .cName.xlong{ font-size:clamp(5.5px, 1.1cqi, 9px); }
+.cell.corner .cSub{ font-size:clamp(5px, 1cqi, 8px); margin-top:2px; }
 .cell.corner .cIcon{ font-size:18px; margin-bottom:2px; }
 
 /* "В тюрьму" — наказание: тревожный красный, чтобы НЕ путать с "Тюрьма/в гостях" */
