@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CAPITALIS — поле</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:#0c0f17;
+  --panel:#12182a;
+  --cell:#161f36;
+  --cell-hi:#1b2542;
+  --stroke:rgba(255,255,255,.08);
+  --stroke-neon:rgba(109,124,255,.35);
+  --text:#e8eeff;
+  --muted:rgba(232,238,255,.55);
+  --accent:#6d7cff;
+  --green:#29d39a;
+  --yellow:#ffd66d;
+
+  --brown:#8d6e63;
+  --lblue:#4fc3f7;
+  --pink:#ff5a7a;
+  --orange:#ffa54f;
+  --red:#ff4d4d;
+  --yellow-g:#ffd66d;
+  --green-g:#29d39a;
+  --dblue:#6d7cff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; height:100vh; overflow:hidden;
+  background:
+    radial-gradient(1200px 600px at 20% 0%, rgba(109,124,255,.18), transparent 60%),
+    radial-gradient(900px 500px at 90% 30%, rgba(41,211,154,.10), transparent 60%),
+    var(--bg);
+  font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial;
+  color:var(--text);
+  display:grid; place-items:center; padding:8px;
+}
+
+/* ===== ДОСКА ===== */
+.board{
+  /* Размер = меньшая сторона экрана минус небольшой отступ.
+     min(ширина, высота) гарантирует, что квадрат влезет при любом повороте. */
+  --size:min(96vw, 96vh, 780px);
+  width:var(--size); height:var(--size);
+  container-type:size;  /* включает единицы cqi/cqh — проценты от размера доски */
+  display:grid;
+  grid-template-columns:repeat(11,1fr);
+  grid-template-rows:repeat(11,1fr);
+  gap:4px;
+  padding:10px;
+  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));
+  border:1px solid var(--stroke-neon);
+  border-radius:20px;
+  box-shadow:0 0 40px rgba(109,124,255,.15), 0 20px 60px rgba(0,0,0,.5);
+}
+
+/* Клетка */
+.cell{
+  position:relative;
+  background:var(--cell);
+  border:1px solid var(--stroke);
+  border-radius:clamp(4px, 1cqi, 8px);
+  padding:clamp(2px, 0.7cqi, 5px) clamp(2px, 0.6cqi, 4px);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+  min-width:0;
+  transition:background .15s, box-shadow .15s, transform .15s;
+  cursor:default;
+}
+.cell:hover{
+  background:var(--cell-hi);
+  box-shadow:0 0 14px rgba(109,124,255,.35);
+  transform:translateY(-1px);
+  z-index:2;
+}
+
+/* Цветная полоса группы города */
+.band{ height:clamp(6px, 1.6cqi, 14px); margin:-4px -3px 4px; border-radius:8px 8px 0 0; }
+
+.cName{
+  font-size:clamp(6px, 1.35cqi, 11px); font-weight:800; line-height:1.1; letter-spacing:.1px;
+  overflow-wrap:break-word; word-break:break-word; hyphens:auto;
+}
+.cName.long{ font-size:clamp(5.5px, 1.15cqi, 9px); line-height:1.05; }
+.cName.xlong{ font-size:clamp(5px, 0.95cqi, 7.5px); line-height:1.02; }
+.cPrice{ margin-top:auto; font-size:clamp(6px, 1.3cqi, 10px); font-weight:900; color:var(--green); }
+.cSub{ font-size:clamp(5px, 1.1cqi, 8.5px); color:var(--muted); margin-top:2px; line-height:1.05; }
+.cIcon{ font-size:clamp(10px, 2cqi, 16px); line-height:1; margin-bottom:1px; }
+.cType{ font-size:clamp(5px, 1cqi, 8px); text-transform:uppercase; letter-spacing:1px; color:var(--muted); font-weight:700; }
+
+/* Спец-клетки — акцент неоном. НЕ форсируем размер имени (иначе длинный текст вылезает) */
+.cell.special .cName{ font-weight:800; }
+/* Плотные клетки (иконка+длинное имя+цена): компактнее, чтобы всё влезло */
+.cell.tax .cIcon,
+.cell.utility .cIcon{ font-size:clamp(9px, 1.7cqi, 13px); margin-bottom:0; }
+.cell.tax .cName,
+.cell.utility .cName{ font-size:clamp(5px, 1.05cqi, 8px); line-height:1.02; }
+.cell.tax .cPrice,
+.cell.utility .cPrice{ font-size:9px; }
+.cell.chance{ background:linear-gradient(180deg,rgba(109,124,255,.12),var(--cell)); }
+.cell.chest{ background:linear-gradient(180deg,rgba(41,211,154,.10),var(--cell)); }
+.cell.tax{ background:linear-gradient(180deg,rgba(255,90,122,.10),var(--cell)); }
+.cell.airport,.cell.utility{ background:linear-gradient(180deg,rgba(255,214,109,.08),var(--cell)); }
+
+/* Угловые — крупнее и ярче */
+.cell.corner{
+  padding:clamp(3px, 0.8cqi, 6px);
+  align-items:center; justify-content:center; text-align:center;
+  background:linear-gradient(135deg,rgba(109,124,255,.14),rgba(41,211,154,.08));
+  border-color:var(--stroke-neon);
+}
+.cell.corner .cName{ font-size:clamp(7px, 1.5cqi, 12px); line-height:1.05; }
+.cell.corner .cName.long{ font-size:clamp(6px, 1.25cqi, 10px); }
+.cell.corner .cName.xlong{ font-size:clamp(5.5px, 1.1cqi, 9px); }
+.cell.corner .cSub{ font-size:clamp(5px, 1cqi, 8px); margin-top:2px; }
+.cell.corner .cIcon{ font-size:18px; margin-bottom:2px; }
+
+/* "В тюрьму" — наказание: тревожный красный, чтобы НЕ путать с "Тюрьма/в гостях" */
+.cell.gotojail{
+  background:linear-gradient(135deg,rgba(255,77,77,.28),rgba(255,90,122,.12));
+  border-color:rgba(255,77,77,.5);
+}
+.cell.gotojail .cName{ color:#ff6b6b; }
+.cell.gotojail .cIcon{ filter:drop-shadow(0 0 8px rgba(255,77,77,.6)); }
+/* "Тюрьма / Просто в гостях" — нейтральная, спокойная */
+.cell.jail{
+  background:linear-gradient(135deg,rgba(255,214,109,.12),rgba(255,255,255,.02));
+  border-color:rgba(255,214,109,.3);
+}
+.cell.jail .cName{ color:var(--yellow); }
+
+/* ===== РАСКЛАДКА 40 КЛЕТОК ПО ПЕРИМЕТРУ 11x11 ===== */
+/* Углы */
+.p0 { grid-area:11 / 11 / 12 / 12; }  /* Старт — низ-право */
+.p10{ grid-area:11 / 1  / 12 / 2;  }  /* Тюрьма — низ-лево */
+.p20{ grid-area:1  / 1  / 2  / 2;  }  /* Отдых — верх-лево */
+.p30{ grid-area:1  / 11 / 2  / 12; }  /* В тюрьму — верх-право */
+
+/* Нижний ряд: 1..9 справа->налево (col 10..2) */
+.p1{grid-area:11/10/12/11} .p2{grid-area:11/9/12/10} .p3{grid-area:11/8/12/9}
+.p4{grid-area:11/7/12/8}   .p5{grid-area:11/6/12/7}  .p6{grid-area:11/5/12/6}
+.p7{grid-area:11/4/12/5}   .p8{grid-area:11/3/12/4}  .p9{grid-area:11/2/12/3}
+
+/* Левый столбец: 11..19 снизу->вверх (row 10..2) */
+.p11{grid-area:10/1/11/2} .p12{grid-area:9/1/10/2} .p13{grid-area:8/1/9/2}
+.p14{grid-area:7/1/8/2}   .p15{grid-area:6/1/7/2}  .p16{grid-area:5/1/6/2}
+.p17{grid-area:4/1/5/2}   .p18{grid-area:3/1/4/2}  .p19{grid-area:2/1/3/2}
+
+/* Верхний ряд: 21..29 слева->направо (col 2..10) */
+.p21{grid-area:1/2/2/3} .p22{grid-area:1/3/2/4} .p23{grid-area:1/4/2/5}
+.p24{grid-area:1/5/2/6} .p25{grid-area:1/6/2/7} .p26{grid-area:1/7/2/8}
+.p27{grid-area:1/8/2/9} .p28{grid-area:1/9/2/10} .p29{grid-area:1/10/2/11}
+
+/* Правый столбец: 31..39 сверху->вниз (row 2..10) */
+.p31{grid-area:2/11/3/12} .p32{grid-area:3/11/4/12} .p33{grid-area:4/11/5/12}
+.p34{grid-area:5/11/6/12} .p35{grid-area:6/11/7/12} .p36{grid-area:7/11/8/12}
+.p37{grid-area:8/11/9/12} .p38{grid-area:9/11/10/12} .p39{grid-area:10/11/11/12}
+
+/* ===== ЦЕНТР ===== */
+.center{
+  grid-area:2 / 2 / 11 / 11;
+  position:relative;
+  display:grid; place-items:center;
+}
+
+/* Диагональные зоны Шанс/Казна — в округлых рамках, симметрично по углам */
+.diagZone{
+  position:absolute;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  pointer-events:none; user-select:none;
+  width:clamp(80px,11vw,130px); height:clamp(80px,11vw,130px);
+  border-radius:18px;
+  border:1.5px dashed currentColor;
+  opacity:.45;
+}
+.diagZone .dzIcon{
+  font-size:clamp(18px,2.6vw,30px);
+  filter:drop-shadow(0 0 10px currentColor);
+}
+.diagZone .dzText{
+  font-size:clamp(9px,1.4vw,14px); font-weight:900;
+  letter-spacing:.24em; text-transform:uppercase;
+}
+/* Казна — плотно в верхнем левом углу центра */
+.diagZone.chestZone{
+  top:1%; left:1%;
+  color:var(--green);
+}
+/* Шанс — плотно в нижнем правом углу центра (симметрично) */
+.diagZone.chanceZone{
+  bottom:1%; right:1%;
+  color:var(--accent);
+}
+
+/* Логотип строго по центру */
+.logoWrap{ width:70%; max-width:420px; opacity:.96; }
+.logoWrap img{ width:100%; height:auto; display:block; }
+.logoFallback{ text-align:center; }
+.logoFallback .lg{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:clamp(28px,6vw,64px); font-weight:700; letter-spacing:.14em;
+  color:var(--text); text-shadow:0 0 18px rgba(109,124,255,.6),0 0 40px rgba(109,124,255,.3);
+}
+.logoFallback .tag{
+  margin-top:8px; font-size:clamp(9px,1.6vw,15px); letter-spacing:.5em;
+  color:var(--accent); text-shadow:0 0 12px rgba(109,124,255,.5);
+}
+/* ===== ПОПАП с инфой о клетке ===== */
+.popupOverlay{
+  position:fixed; inset:0; z-index:100;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(6,9,16,.72); backdrop-filter:blur(4px);
+  padding:24px;
+}
+.popupOverlay.show{ display:flex; }
+.popupCard{
+  width:min(88vw, 340px);
+  background:linear-gradient(180deg, var(--panel), var(--card));
+  border:1px solid var(--stroke-neon);
+  border-radius:18px;
+  padding:20px;
+  box-shadow:0 0 40px rgba(109,124,255,.3), 0 20px 60px rgba(0,0,0,.6);
+  animation:popIn .18s ease;
+}
+@keyframes popIn{ from{transform:scale(.92); opacity:0} to{transform:scale(1); opacity:1} }
+.popTitle{ font-size:22px; font-weight:900; margin-bottom:4px; }
+.popType{ font-size:13px; color:var(--muted); margin-bottom:14px; }
+.popPrice{ font-size:16px; font-weight:800; color:var(--green); margin-top:6px; }
+.popSub{ font-size:13px; color:var(--muted); margin-top:8px; }
+.popupClose{
+  margin-top:18px; width:100%;
+  border:1px solid var(--stroke-neon); border-radius:12px;
+  padding:11px; font-weight:800; font-size:14px;
+  background:rgba(109,124,255,.16); color:var(--text);
+  cursor:pointer; transition:background .15s;
+}
+.popupClose:active{ background:rgba(109,124,255,.3); }
+/* ===== HUD: панель игрока ===== */
+.hud{
+  position:fixed; left:0; right:0; bottom:0; z-index:50;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg, transparent, rgba(6,9,16,.92) 30%);
+}
+.hudMoney{ display:flex; flex-direction:column; gap:2px; }
+.hudLabel{ font-size:11px; color:var(--muted); letter-spacing:.05em; }
+.hudValue{ font-size:22px; font-weight:900; color:var(--green); }
+.hudDice{ display:flex; gap:8px; }
+.die{
+  width:44px; height:44px; border-radius:12px;
+  display:grid; place-items:center;
+  font-size:22px; font-weight:900;
+  background:linear-gradient(180deg, var(--panel), var(--card));
+  border:1px solid var(--stroke-neon);
+  box-shadow:0 4px 14px rgba(0,0,0,.4);
+}
+.die.rolling{ animation:diceShake .5s ease; }
+@keyframes diceShake{
+  0%,100%{ transform:translateY(0) rotate(0) }
+  25%{ transform:translateY(-6px) rotate(-12deg) }
+  75%{ transform:translateY(-6px) rotate(12deg) }
+}
+.rollBtn{
+  padding:14px 20px; border-radius:14px;
+  font-size:15px; font-weight:900; letter-spacing:.02em;
+  background:linear-gradient(135deg, rgba(109,124,255,.9), rgba(41,211,154,.75));
+  color:#0c0f17; border:none; cursor:pointer;
+  box-shadow:0 6px 20px rgba(109,124,255,.4);
+  transition:transform .12s, filter .12s;
+}
+.rollBtn:active{ transform:scale(.96); }
+.rollBtn:disabled{ opacity:.5; cursor:not-allowed; filter:grayscale(.4); }
+
+/* ===== Фишки ===== */
+.tokensLayer{
+  position:absolute; inset:10px; /* совпадает с padding доски */
+  pointer-events:none; z-index:20;
+}
+.token{
+  position:absolute;
+  width:clamp(16px, 3.2cqi, 26px); height:clamp(16px, 3.2cqi, 26px);
+  border-radius:50%;
+  display:grid; place-items:center;
+  font-size:clamp(11px, 2.2cqi, 17px);
+  background:radial-gradient(circle at 35% 30%, #fff, #cfd6ff);
+  border:2px solid var(--accent);
+  box-shadow:0 0 12px rgba(109,124,255,.8), 0 3px 8px rgba(0,0,0,.5);
+  transition:left .28s ease, top .28s ease;
+  transform:translate(-50%, -50%);
+}
+
+/* ===== Кнопки действий в попапе ===== */
+#popupActions{ display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+.actBtn{
+  width:100%; border-radius:12px; padding:12px;
+  font-weight:800; font-size:14px; cursor:pointer;
+  border:1px solid var(--stroke-neon); color:var(--text);
+  transition:background .15s, transform .1s;
+}
+.actBtn:active{ transform:scale(.97); }
+.actBtn.buy{ background:linear-gradient(135deg, rgba(41,211,154,.25), rgba(41,211,154,.12)); border-color:rgba(41,211,154,.5); }
+.actBtn.skip{ background:rgba(255,255,255,.05); }
+/* Статус соединения + чей ход */
+.statusBar{
+  position:fixed; top:0; left:0; right:0; z-index:40;
+  display:flex; justify-content:space-between;
+  padding:6px 14px calc(6px + env(safe-area-inset-top));
+  font-size:12px; color:var(--muted);
+  background:linear-gradient(180deg, rgba(6,9,16,.9), transparent);
+  pointer-events:none;
+}
+#turnInfo{ color:var(--accent); font-weight:700; }
+
+/* Купленные клетки */
+.cell.owned{ box-shadow:inset 0 0 0 2px rgba(255,214,109,.5); }
+.cell.ownedMine{ box-shadow:inset 0 0 0 2px rgba(41,211,154,.7); }
+.token.myToken{ border-color:var(--green); box-shadow:0 0 12px rgba(41,211,154,.9), 0 3px 8px rgba(0,0,0,.5); }
+</style>
+</head>
+<body>
+
+<div class="board" id="board">
+  <div class="center">
+    <div class="diagZone chestZone">
+      <div class="dzIcon">&#10086;</div>
+      <div class="dzText">Казна</div>
+    </div>
+    <div class="diagZone chanceZone">
+      <div class="dzIcon">?</div>
+      <div class="dzText">Шанс</div>
+    </div>
+    <div class="logoWrap">
+      <img src="logo.svg" alt="CAPITALIS"
+           onerror="this.parentNode.innerHTML='&lt;div class=logoFallback&gt;&lt;div class=lg&gt;CAPITALIS&lt;/div&gt;&lt;div class=tag&gt;THE WORLD IS YOURS&lt;/div&gt;&lt;/div&gt;'">
+    </div>
+  </div>
+  <!-- Слой фишек: они позиционируются поверх клеток по индексу -->
+  <div class="tokensLayer" id="tokensLayer"></div>
+</div>
+
+<!-- Попап с инфой о клетке (поверх всего) -->
+<div class="popupOverlay" id="popup" onclick="if(event.target===this)closePopup()">
+  <div class="popupCard">
+    <div id="popupBody"></div>
+    <div id="popupActions"></div>
+    <button class="popupClose" onclick="closePopup()">Закрыть</button>
+  </div>
+</div>
+
+<!-- Строка статуса: соединение + чей ход -->
+<div class="statusBar">
+  <span id="connStatus">Подключение…</span>
+  <span id="turnInfo"></span>
+</div>
+
+<!-- Панель управления игрока -->
+<div class="hud">
+  <div class="hudMoney">
+    <span class="hudLabel">Баланс</span>
+    <span class="hudValue" id="hudBalance">$1500</span>
+  </div>
+  <div class="hudDice">
+    <div class="die" id="die1">–</div>
+    <div class="die" id="die2">–</div>
+  </div>
+  <button class="rollBtn" id="rollBtn" onclick="rollDice()" disabled>Бросить кубики</button>
+</div>
+
+<script src="data.js"></script>
+<script>
+const ICONS = {
+  start:"\u2190", jail:"\u26D3", parking:"\u{1F17F}", gotojail:"\u{1F693}",
+  chance:"?", chest:"\u2726", airport:"\u2708", utility:"\u26A1", tax:"\u{1F4B8}"
+};
+const board = document.getElementById("board");
+
+BOARD.forEach(c=>{
+  const el = document.createElement("div");
+  const corner = ["start","jail","parking","gotojail"].includes(c.type);
+  el.className = `cell p${c.i} ${c.type}` + (corner?" corner":"") + (c.type!=="city"?" special":"");
+  el.dataset.cell = c.i;  // индекс клетки — по нему фишки встают на место
+
+  // Что показываем НА клетке: короткое имя, если задано, иначе полное
+  const label = c.short || c.name;
+
+  // Класс размера по длине ПОКАЗЫВАЕМОГО текста
+  const nameClass = (n) => {
+    const len = n.length;
+    if(len > 12) return "cName xlong";
+    if(len > 8)  return "cName long";
+    return "cName";
+  };
+
+  let inner = "";
+
+  if(c.type==="city"){
+    const col = GROUP_COLORS[c.group] || "#888";
+    inner += `<div class="band" style="background:${col};box-shadow:0 0 10px ${col}55"></div>`;
+    inner += `<div class="${nameClass(label)}">${label}</div>`;
+    inner += `<div class="cPrice">$${c.price}</div>`;
+  } else if(corner){
+    inner += `<div class="cIcon">${ICONS[c.type]||""}</div>`;
+    inner += `<div class="${nameClass(label)}">${label}</div>`;
+    if(c.sub) inner += `<div class="cSub">${c.sub}</div>`;
+  } else {
+    inner += `<div class="cIcon">${ICONS[c.type]||""}</div>`;
+    inner += `<div class="${nameClass(label)}">${label}</div>`;
+    if(c.price) inner += `<div class="cPrice">$${c.price}</div>`;
+    if(c.amount) inner += `<div class="cPrice" style="color:var(--pink)">-$${c.amount}</div>`;
+  }
+
+  el.innerHTML = inner;
+  el.addEventListener("click", ()=>showCellInfo(c));  // тап → полная инфа
+  board.appendChild(el);
+});
+
+// ── Попап с полной информацией о клетке ──
+// Переиспользуется позже для механики (когда фишка встаёт на клетку)
+function showCellInfo(c){
+  const groupName = {
+    brown:"Коричневая", lblue:"Голубая", pink:"Розовая", orange:"Оранжевая",
+    red:"Красная", yellow:"Жёлтая", green:"Зелёная", dblue:"Синяя"
+  };
+  const typeLabel = {
+    city:"Город", airport:"Аэропорт", utility:"Предприятие", tax:"Налог",
+    chance:"Шанс", chest:"Казна", start:"Старт", jail:"Тюрьма",
+    parking:"Отдых", gotojail:"В тюрьму"
+  };
+
+  let body = `<div class="popTitle">${c.name}</div>`;
+  body += `<div class="popType">${typeLabel[c.type]||""}`;
+  if(c.group) body += ` · ${groupName[c.group]} группа`;
+  body += `</div>`;
+
+  if(c.price)  body += `<div class="popPrice">Цена: $${c.price}</div>`;
+  if(c.amount) body += `<div class="popPrice" style="color:var(--pink)">Платёж: $${c.amount}</div>`;
+  if(c.sub)    body += `<div class="popSub">${c.sub}</div>`;
+
+  document.getElementById("popupBody").innerHTML = body;
+  const acts = document.getElementById("popupActions");
+  if(acts) acts.innerHTML = "";
+  document.getElementById("popup").classList.add("show");
+}
+
+function closePopup(){
+  document.getElementById("popup").classList.remove("show");
+  const acts = document.getElementById("popupActions");
+  if(acts) acts.innerHTML = "";
+}
+
+</script>
+<script src="game.js"></script>
+</body>
+</html>
